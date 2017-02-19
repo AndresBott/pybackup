@@ -1,0 +1,4 @@
+- add multiple profiles in one profile file
+- bcackup to other location than local folder
+- make better argparse
+- add excluded dirs
