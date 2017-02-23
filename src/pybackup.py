@@ -8,6 +8,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser(description='Crate mysql and Files backup based on profile File definition')
     parser.add_argument('-run', metavar='configFile',   help='run a backup job with the specified config file', type=argparse.FileType('r'))
+    parser.add_argument('-restore', metavar='restorePath',   help='Restore a tgz compressed with pybackuo to the desired path', type=argparse.FileType('r'))
     args = parser.parse_args()
 
     if args.run is not None:
@@ -19,7 +20,7 @@ def main(argv):
             "chown":"!",
             "chmod":"!",
             # "excludes":"",
-            "mysqldb":"",
+            "mysqldb":"!",
             "mysqldbfileName":"mysqldump.sql",
             "keepold":"",
             "tmpdir":"../pybackup_tmp",
@@ -132,35 +133,36 @@ class BackupWorker:
 
     def mysqlBackup(self):
 
-        user = ""
-        passwd = ""
-        dbName = self.config.values["mysqldb"]
-        dumpPath = self.tmpPath+"/"+self.config.values["mysqldbfileName"]
-        mysqlconfigFiles = self.mysqlconfigFiles
-        mysqlconfigFiles.append(self.config.configFile)
+        if self.config.values["mysqldb"] != "!":
+            user = ""
+            passwd = ""
+            dbName = self.config.values["mysqldb"]
+            dumpPath = self.tmpPath+"/"+self.config.values["mysqldbfileName"]
+            mysqlconfigFiles = self.mysqlconfigFiles
+            mysqlconfigFiles.append(self.config.configFile)
 
-        for file in mysqlconfigFiles:
-            if os.path.isfile(file):
-                values = {"user":"","password":""}
-                config = BackupConfig(file,"client",values)
-                user = config.values["user"]
-                passwd = config.values["password"]
-                break
+            for file in mysqlconfigFiles:
+                if os.path.isfile(file):
+                    values = {"user":"","password":""}
+                    config = BackupConfig(file,"client",values)
+                    user = config.values["user"]
+                    passwd = config.values["password"]
+                    break
 
-        args = ['mysqldump', '-u', user, "-p"+passwd, '--add-drop-database', '--databases', dbName ]
+            args = ['mysqldump', '-u', user, "-p"+passwd, '--add-drop-database', '--databases', dbName ]
 
-        with open(dumpPath, 'wb', 0) as file:
-            p1 = Popen(args, stdout=file)
-            # p1 = Popen(args, stdout=PIPE)
-            # p2 = Popen('gzip', stdin=p1.stdout, stdout=f)
-        # p1.stdout.close() # force write error (/SIGPIPE) if p2 dies
-        # p2.wait()
-        p1.wait()
+            with open(dumpPath, 'wb', 0) as file:
+                p1 = Popen(args, stdout=file)
+                # p1 = Popen(args, stdout=PIPE)
+                # p2 = Popen('gzip', stdin=p1.stdout, stdout=f)
+            # p1.stdout.close() # force write error (/SIGPIPE) if p2 dies
+            # p2.wait()
+            p1.wait()
 
-        if self.config.values["chown"] != "!":
-            call(["chown",self.config.values["chown"]+":"+self.config.values["chown"],dumpPath])
-        if self.config.values["chmod"] != "!":
-            call(["chmod",self.config.values["chmod"],dumpPath])
+            if self.config.values["chown"] != "!":
+                call(["chown",self.config.values["chown"]+":"+self.config.values["chown"],dumpPath])
+            if self.config.values["chmod"] != "!":
+                call(["chmod",self.config.values["chmod"],dumpPath])
 
 
     def copyFiles(self):
