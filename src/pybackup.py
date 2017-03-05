@@ -229,7 +229,7 @@ class pyBackupWorker():
 
 
     def copyProfile(self):
-        origin =self.configinifil
+        origin =self.configinifile
         filename =  ntpath.basename(origin)
         destination =  self.tmpPath+"/"+filename;
 
