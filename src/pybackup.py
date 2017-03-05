@@ -289,9 +289,9 @@ class pyBackupWorker():
 
 
     def cleanOld(self):
-        destination = self.config.values["destination"]
+        destination = self.config["destination"]
         files = []
-        nkeep = int(self.config.values["keepold"])
+        nkeep = int(self.config["keepold"])
 
         for file in os.listdir(destination):
             if file.endswith(".tgz"):
