@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+# version: 0.2
+# author: Andres Bott <contact@andresbott.com>
+# license: LGPL
 
 import sys, getopt, configparser, os, ntpath, datetime, argparse
 from subprocess import Popen, PIPE, call
