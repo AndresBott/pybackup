@@ -21,6 +21,7 @@ def main(argv):
         inputfile = args.backup.name
         backupparms =  {
             "profilename":"",
+            "nodate":False,
             "rootdir":"",
             "chown":"!",
             "chmod":"!",
@@ -245,7 +246,11 @@ class pyBackupWorker():
         origin = self.tmpPath
         destination = self.config["destination"]
         # 2017_01_01_-_04_22_01.aireyvuelo_com_backup.tgz
-        filename =  now+"."+self.config["profilename"]+".backup"
+
+        if self.config["nodate"]:
+            filename = self.config["profilename"]+".backup"
+        else:
+            filename =  now+"."+self.config["profilename"]+".backup"
         destinationFile = destination+filename+".tgz"
 
         if not os.path.exists(destination):
