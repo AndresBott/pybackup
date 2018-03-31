@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# version: 0.2
+# version: 0.2.1
 # author: Andres Bott <contact@andresbott.com>
 # license: LGPL
 
@@ -10,9 +10,14 @@ def main(argv):
     inputfile = ''
 
     parser = argparse.ArgumentParser(description='Crate mysql and Files backup based on profile File definition')
-    parser.add_argument('-backup', metavar='configFile',   help='run a backup job with the specified config file', type=argparse.FileType('r'))
-    parser.add_argument('-restore', metavar='backupFile',   help='run a restore job with the specified backup file', type=argparse.FileType('r'))
-    parser.add_argument('-conffile', metavar='configFile',   help='specify a different restore config file', type=argparse.FileType('r'))
+    
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-b','--backup', metavar='configFile',   help='run a backup job with the specified config file', type=argparse.FileType('r'))
+    group.add_argument('-r','--restore', metavar='backupFile',   help='run a restore job with the specified backup file', type=argparse.FileType('r'))
+    
+    parser.add_argument('-c','--conffile', metavar='configFile',   help='specify a different restore config file', type=argparse.FileType('r'))
+    parser.add_argument('-v','--verbose', action='store_true',   help='add verbose output')
+    
     # parser.add_argument('-restorefile', nargs=2 , metavar=('configFile','backupFile'),     help='run a restore job with the specified config file and the backupfile', type=argparse.FileType('r'))
     args = parser.parse_args()
 
@@ -23,6 +28,7 @@ def main(argv):
             "profilename":"",
             "nodate":False,
             "rootdir":"",
+            "followsymlinks":"false",
             "chown":"!",
             "chmod":"!",
             # "excludes":"",
@@ -32,9 +38,14 @@ def main(argv):
             "tmpdir":"../pybackup_tmp",
             "destination":"",
         }
+        
         config = PyBackupConfig(inputfile,'pybackup',backupparms)
         # config.printer()
-        backup = pyBackupWorker(config)
+        if args.verbose is True:
+            v = True
+        else:
+            v = False           
+        backup = pyBackupWorker(config,v)
         backup.runBackup()
 
 
@@ -56,6 +67,7 @@ def main(argv):
             config = PyBackupConfig(inputfile,'pybackup',restoreParams)
             restore = pyBackupWorker(config)
             restore.runRestore()
+
 
         else:
             print("Not implemented yet to get config from backup included file")
@@ -108,10 +120,14 @@ class pyBackupWorker():
     tmpPath = ""
     conf = {}
 
-    def __init__(self,config):
+    def __init__(self,config,v=False):
         # config.printer()
         self.config = config.values
         self.configinifile = config.configFile
+
+        if v is True:
+            self.v = True
+
 
     def runBackup(self):
         self.createTmpDir()
@@ -167,7 +183,12 @@ class pyBackupWorker():
 
         if self.config["mysqldb"] != "!":
             confdata = self.getMysqlConfig()
-            args = ['mysqldump', '-u', confdata["user"], "-p"+confdata["passwd"], '--add-drop-database', '--databases', confdata["dbName"] ]
+            
+            if self.v:
+                print("- Mysql dump")
+                print(['mysqldump', '-u', confdata["user"], "-p**********", '--add-drop-database', '--databases', confdata["dbName"] ])
+                
+            args = ['mysqldump', '-u', confdata["user"], "-p"+confdata["passwd"], '--add-drop-database', '--databases', confdata["dbName"] ]            
             with open(confdata["dumpPath"], 'wb', 0) as file:
                 p1 = Popen(args, stdout=file)
                 # p1 = Popen(args, stdout=PIPE)
@@ -180,6 +201,7 @@ class pyBackupWorker():
                 call(["chown",self.config["chown"]+":"+self.config["chown"],confdata["dumpPath"]])
             if self.config["chmod"] != "!":
                 call(["chmod",self.config["chmod"],confdata["dumpPath"]])
+
 
     def mysqlRestore(self):
         if self.config["mysqldb"] != "!":
@@ -204,12 +226,24 @@ class pyBackupWorker():
         if not os.path.exists(destination):
             os.makedirs(destination)
 
-        args = ['cp', '-a', origin, destination ]
+        args = ['cp', '-a' ]
+
+        if self.config["followsymlinks"] == "true":
+            args.append("-L")
+            
+        args.append(origin)
+        args.append(destination)
+
+        if self.v:
+            print("- Copy files")
+            print(args)
+        
         returncode = call(args)
 
         if returncode != 0:
             print ("something Went wrong while copying files with cp from: "+origin + " to: "+destination+", exiting")
             sys.exit(1)
+
 
     def restoreFiles(self):
         destination =os.path.abspath(self.config["rootdir"]+"/.")
