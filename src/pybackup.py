@@ -119,6 +119,7 @@ class pyBackupWorker():
     configinifile=""
     tmpPath = ""
     conf = {}
+    v = False
 
     def __init__(self,config,v=False):
         # config.printer()
