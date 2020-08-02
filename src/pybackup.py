@@ -12,7 +12,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Crate mysql and Files backup based on profile File definition')
     
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-b','--backup', metavar='configFile',   help='run a backup job with the specified config file', type=argparse.FileType('r'))
+    group.add_argument('-b','--backup', metavar='backup',   help='run a backup job with the specified config file', type=argparse.FileType('r'))
     group.add_argument('-r','--restore', metavar='backupFile',   help='run a restore job with the specified backup file', type=argparse.FileType('r'))
     
     parser.add_argument('-c','--conffile', metavar='configFile',   help='specify a different restore config file', type=argparse.FileType('r'))
@@ -96,7 +96,7 @@ class PyBackupConfig:
 
         try:
             open(self.configFile)
-            config = configparser.SafeConfigParser(defaults)
+            config = configparser.ConfigParser(defaults)
             config.read(self.configFile)
 
 
